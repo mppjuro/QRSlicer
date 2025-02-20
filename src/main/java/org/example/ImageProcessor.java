@@ -1,5 +1,7 @@
 package org.example;
 
+import org.springframework.stereotype.Component;
+
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -7,6 +9,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@Component
 public class ImageProcessor {
 
     /**
@@ -21,15 +24,9 @@ public class ImageProcessor {
      *  - Zapis debug_output.png z czerwoną siatką
      *  - Zwraca listę obiektów CompressedBitmap (zamiast JSON String!)
      */
-    public List<CompressedBitmap> processImage(byte[] imageBytes) throws IOException {
-
-        // 1. Bajty -> BufferedImage
-        BufferedImage input;
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes)) {
-            input = ImageIO.read(bais);
-        }
+    public List<CompressedBitmap> processImage(BufferedImage input) throws IOException {
         if (input == null) {
-            throw new IOException("Nie udało się wczytać obrazu z bajtów.");
+            throw new IOException("Nie udało się wczytać obrazu.");
         }
 
         int origWidth = input.getWidth();
@@ -44,19 +41,17 @@ public class ImageProcessor {
                 int g = c.getGreen();
                 int b = c.getBlue();
 
-                // Prosty próg
+                // Binaryzacja
                 boolean val = (r < 200 && g < 200);
-                // Dodatkowo, jeżeli (r<150 && g<150 && b<120) => false
                 if (r < 150 && g < 150 && b < 120) {
                     val = false;
                 }
                 matrix[y][x] = val;
             }
         }
-        // Usuwamy samotne piksele
         matrix = removeLonelyPixels(matrix);
 
-        // 3. Usuwanie lewego pustego marginesu (threshold=10 czarnych pikseli)
+        // 3. Usuwanie lewego pustego marginesu
         int leftMargin = findLeftMargin(matrix);
         if (leftMargin > 0) {
             matrix = cutLeft(matrix, leftMargin);
@@ -65,7 +60,7 @@ public class ImageProcessor {
         int width = matrix[0].length;
         int height = matrix.length;
 
-        // 4. Szukamy 7 linii poziomych (8 stref)
+        // 4. Szukamy 7 linii poziomych
         List<Integer> hLines = null;
         boolean fallback = false;
         try {
@@ -90,18 +85,13 @@ public class ImageProcessor {
         }
 
         // 7. Rysowanie i zapis debug_output.png
-        // Tworzymy kopię oryginalnego obrazu i odcinamy leftMargin
         BufferedImage debugImg = copyBufferedImage(input);
         debugImg = debugImg.getSubimage(leftMargin, 0, width, height);
-
         drawDebugLines(debugImg, hLines, vLine, fallback);
-        ImageIO.write(debugImg, "png", new File("debug_output.png"));
+        ImageIO.write(debugImg, "png", new File("received-cut.png"));
 
-        // 8. Zwracamy listę obiektów CompressedBitmap
-        // (Spring Boot / Jackson zamieni to na JSON w kontrolerze)
         return resultList;
     }
-
     // -------------------------------------------------------------------------
     private boolean[][] removeLonelyPixels(boolean[][] matrix) {
         int h = matrix.length, w = matrix[0].length;
@@ -166,59 +156,71 @@ public class ImageProcessor {
     private List<Integer> find7HorizontalLines(boolean[][] matrix) {
         int h = matrix.length;
         int w = matrix[0].length;
-
         double rowThreshold = w * 0.01;
-        double minBlockHeight = 0.05 * h;
+        double minimumPer = 0.01;
+        List<WhiteBlock> blocks = null;
 
-        boolean[] isWhite = new boolean[h];
-        for (int y = 0; y < h; y++) {
-            int blackCount = 0;
-            for (int x = 0; x < w; x++) {
-                if (matrix[y][x]) blackCount++;
+        // Zwiększamy minimumPer co 0.01, aż dokładnie 7 bloków zostanie wykrytych
+        while (minimumPer <= 1.0) { // górna granica – w razie czego
+            double minBlockHeight = minimumPer * h;
+            boolean[] isWhite = new boolean[h];
+            for (int y = 0; y < h; y++) {
+                int blackCount = 0;
+                for (int x = 0; x < w; x++) {
+                    if (matrix[y][x]) {
+                        blackCount++;
+                    }
+                }
+                isWhite[y] = (blackCount < rowThreshold);
             }
-            isWhite[y] = (blackCount < rowThreshold);
+
+            blocks = new ArrayList<>();
+            int idx = 0;
+            while (idx < h) {
+                if (!isWhite[idx]) {
+                    idx++;
+                    continue;
+                }
+                int start = idx;
+                while (idx < h && isWhite[idx]) {
+                    idx++;
+                }
+                int end = idx - 1;
+                int blockHeight = end - start + 1;
+                if (blockHeight >= minBlockHeight) {
+                    blocks.add(new WhiteBlock(start, end));
+                }
+            }
+            System.out.println("Znaleziono: " + blocks.size() + "poziomych linii");
+            if (blocks.size() == 7) {
+                break;
+            }
+            if (blocks.size() > 7) {
+                minimumPer *= 1.1;
+                rowThreshold *= 0.9;
+            }
+            else {
+                minimumPer *= 0.9;
+                rowThreshold *= 1.1;
+            }
         }
 
-        List<WhiteBlock> blocks = new ArrayList<>();
-        int idx = 0;
-        while (idx < h) {
-            if (!isWhite[idx]) {
-                idx++;
-                continue;
-            }
-            int start = idx;
-            while (idx < h && isWhite[idx]) {
-                idx++;
-            }
-            int end = idx - 1;
-            int blockHeight = end - start + 1;
-
-            if (blockHeight >= minBlockHeight) {
-                blocks.add(new WhiteBlock(start, end));
-            }
+        if (blocks == null || blocks.size() != 7) {
+            throw new RuntimeException("Nie udało się znaleźć dokładnie 7 linii przy określonym minimumPer");
         }
 
-        if (blocks.size() < 7) {
-            throw new RuntimeException("Zbyt mało białych bloków (>=5%): " + blocks.size());
-        }
-
-        List<WhiteBlock> used = blocks.subList(0, 7);
         List<Integer> lines = new ArrayList<>(7);
-
+        List<WhiteBlock> used = blocks.subList(0, 7);
         for (int i = 0; i < 7; i++) {
             WhiteBlock wb = used.get(i);
-            int startY = wb.start;
-            int endY = wb.end;
-            int blockH = endY - startY + 1;
-
-            double ratio = 0.5;
+            int blockH = wb.end - wb.start + 1;
+            double ratio = 0.5; // domyślnie środek bloku
             if (i == 0) {
-                ratio = 0.7; // top
+                ratio = 0.7; // dla pierwszego bloku – cięcie bliżej dolnej krawędzi
             } else if (i == 6) {
-                ratio = 0.3; // bottom
+                ratio = 0.3; // dla ostatniego bloku – cięcie bliżej górnej krawędzi
             }
-
-            int cutLine = (int)(startY + ratio * blockH);
+            int cutLine = (int) (wb.start + ratio * blockH);
             lines.add(cutLine);
         }
         lines.sort(Integer::compareTo);
@@ -229,6 +231,7 @@ public class ImageProcessor {
         int start, end;
         WhiteBlock(int s, int e) { start = s; end = e; }
     }
+
 
     // -------------------------------------------------------------------------
     // Tniemy 8×2 lub fallback
@@ -417,10 +420,6 @@ public class ImageProcessor {
         public int height;
         public int n;
         public int[] data;
-
-        // Gettery/settery jeśli chcesz, ale dla Jacksona i publicznych pól wystarczy public:
-        // public int getWidth(){return width;}
-        // ...
     }
 
     private boolean[][] trimToSize(boolean[][] matrix, int targetH, int targetW) {
