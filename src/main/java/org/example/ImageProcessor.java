@@ -7,10 +7,20 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Component
 public class ImageProcessor {
+
+    // Klasa sub–obrazu
+    public static class CompressedBitmap {
+        public int smallPx;
+        public int width;
+        public int height;
+        public int n;
+        public int[] data;
+    }
 
     /**
      * Główna metoda przetwarzająca:
@@ -32,18 +42,102 @@ public class ImageProcessor {
         int origWidth = input.getWidth();
         int origHeight = input.getHeight();
 
+        // W metodzie processImage, przed binaryzacją (po sprawdzeniu input != null):
+
+// --- Wykrywanie czerwonych linii (85% pikseli) ---
+        List<Integer> horizontalRedLines = new ArrayList<>();
+        List<Integer> verticalRedLines = new ArrayList<>();
+        int redThreshold = 200;   // Początkowy próg dla kanału R
+        int greenBlueThreshold = 100; // Maksymalna wartość dla kanałów G i B
+        int requiredPercentage = 80; // Wymagany % czerwonych pikseli
+        int attempts = 0;
+        boolean linesDetected = false;
+
+        do {
+            horizontalRedLines.clear();
+            verticalRedLines.clear();
+
+            // Wykrywanie poziomych linii (sprawdzaj każdy wiersz)
+            for (int y = 0; y < origHeight; y++) {
+                int redPixels = 0;
+                for (int x = 0; x < origWidth; x++) {
+                    Color c = new Color(input.getRGB(x, y));
+                    if (c.getRed() >= redThreshold && c.getGreen() <= greenBlueThreshold && c.getBlue() <= greenBlueThreshold) {
+                        redPixels++;
+                    }
+                }
+                double percentage = (redPixels * 100.0) / origWidth;
+                if (percentage >= requiredPercentage) {
+                    horizontalRedLines.add(y);
+                }
+            }
+
+            // Wykrywanie pionowych linii (sprawdzaj każdą kolumnę)
+            for (int x = 0; x < origWidth; x++) {
+                int redPixels = 0;
+                for (int y = 0; y < origHeight; y++) {
+                    Color c = new Color(input.getRGB(x, y));
+                    if (c.getRed() >= redThreshold && c.getGreen() <= greenBlueThreshold && c.getBlue() <= greenBlueThreshold) {
+                        redPixels++;
+                    }
+                }
+                double percentage = (redPixels * 100.0) / origHeight;
+                if (percentage >= requiredPercentage) {
+                    verticalRedLines.add(x);
+                }
+            }
+
+            // Dostosuj próg czerwieni, aby liczba linii mieściła się w 30-40
+            if (horizontalRedLines.size() < 30) {
+                redThreshold = Math.max(0, redThreshold - 5); // Zmniejsz próg R
+            } else if (horizontalRedLines.size() > 40) {
+                redThreshold = Math.min(255, redThreshold + 5); // Zwiększ próg R
+            } else {
+                linesDetected = true;
+            }
+
+            attempts++;
+        } while (!linesDetected && attempts < 20);
+
+// Zaznacz linie na obrazie i zapisz
+        BufferedImage linesImage = copyBufferedImage(input);
+        Graphics2D g = linesImage.createGraphics();
+        g.setColor(Color.GREEN);
+        g.setStroke(new BasicStroke(2f));
+
+        for (Integer y : horizontalRedLines) {
+            g.drawLine(0, y, linesImage.getWidth() - 1, y);
+        }
+        for (Integer x : verticalRedLines) {
+            g.drawLine(x, 0, x, linesImage.getHeight() - 1);
+        }
+        g.dispose();
+        ImageIO.write(linesImage, "png", new File("received-lines.png"));
+
+        // W metodzie processImage, po wykryciu linii i przed binaryzacją:
+        int minHorizontalGap = calculateMinGap(horizontalRedLines);
+        int minVerticalGap = calculateMinGap(verticalRedLines);
+
+        int bigPx = Math.max(minHorizontalGap, minVerticalGap);
+        if (bigPx <= 0) bigPx = 1; // Zabezpieczenie przed zerem
+        int smallPx = 1000000 * bigPx / 5;
+
+        System.out.println("Px na kratkę: " + (double)smallPx/1000000.0);
+
+// --- Koniec modyfikacji ---
+
         // 2. Binaryzacja + usuwanie samotnych pikseli
         boolean[][] matrix = new boolean[origHeight][origWidth];
         for (int y = 0; y < origHeight; y++) {
             for (int x = 0; x < origWidth; x++) {
                 Color c = new Color(input.getRGB(x, y), true);
                 int r = c.getRed();
-                int g = c.getGreen();
+                int green = c.getGreen();
                 int b = c.getBlue();
 
                 // Binaryzacja
-                boolean val = (r < 200 && g < 200);
-                if (r < 150 && g < 150 && b < 120) {
+                boolean val = (r < 200 && green < 200);
+                if (r < 150 && green < 150 && b < 120) {
                     val = false;
                 }
                 matrix[y][x] = val;
@@ -79,9 +173,9 @@ public class ImageProcessor {
         // 6. Tniemy na 8×2 (lub fallback)
         List<CompressedBitmap> resultList;
         if (!fallback) {
-            resultList = cutIntoSegments(matrix, hLines, vLine);
+            resultList = cutIntoSegments(matrix, hLines, vLine, smallPx);
         } else {
-            resultList = cutEqually(matrix);
+            resultList = cutEqually(matrix, smallPx);
         }
 
         // 7. Rysowanie i zapis debug_output.png
@@ -235,8 +329,7 @@ public class ImageProcessor {
 
     // -------------------------------------------------------------------------
     // Tniemy 8×2 lub fallback
-    private List<CompressedBitmap> cutIntoSegments(boolean[][] matrix, List<Integer> hLines, int vLine) {
-        int h = matrix.length, w = matrix[0].length;
+    private List<CompressedBitmap> cutIntoSegments(boolean[][] matrix, List<Integer> hLines, int vLine, int smallPx) {        int h = matrix.length, w = matrix[0].length;
 
         // Upewnij się, że hLines są posortowane
         hLines.sort(Integer::compareTo);
@@ -286,6 +379,7 @@ public class ImageProcessor {
             trimmed = trimLeftRight(trimmed, 0.05); // usuń 5% z obu stron
             int[] compressed = compressBooleanMatrix(trimmed);
             CompressedBitmap cb = new CompressedBitmap();
+            cb.smallPx = smallPx;
             cb.width = trimmed[0].length;
             cb.height = trimmed.length;
             cb.n = compressed.length;
@@ -295,7 +389,7 @@ public class ImageProcessor {
         return list;
     }
 
-    private List<CompressedBitmap> cutEqually(boolean[][] matrix) {
+    private List<CompressedBitmap> cutEqually(boolean[][] matrix, int smallPx) {
         int h = matrix.length, w = matrix[0].length;
         int rowH = h / 8;  // oryginalny podział na 8 rzędów
         int colW = w / 2;
@@ -335,6 +429,7 @@ public class ImageProcessor {
             trimmed = trimLeftRight(trimmed, 0.05); // usuń 5% z lewej i prawej
             int[] compressed = compressBooleanMatrix(trimmed);
             CompressedBitmap cb = new CompressedBitmap();
+            cb.smallPx = smallPx;
             cb.width = trimmed[0].length;
             cb.height = trimmed.length;
             cb.n = compressed.length;
@@ -414,14 +509,6 @@ public class ImageProcessor {
         return copy;
     }
 
-    // Klasa sub–obrazu
-    public static class CompressedBitmap {
-        public int width;
-        public int height;
-        public int n;
-        public int[] data;
-    }
-
     private boolean[][] trimToSize(boolean[][] matrix, int targetH, int targetW) {
         int h = matrix.length;
         int w = matrix[0].length;
@@ -446,5 +533,17 @@ public class ImageProcessor {
             System.arraycopy(matrix[y], cut, result[y], 0, newW);
         }
         return result;
+    }
+
+    private int calculateMinGap(List<Integer> lines) {
+        if (lines.size() < 2) return 0;
+        List<Integer> sorted = new ArrayList<>(lines);
+        Collections.sort(sorted);
+        int minGap = Integer.MAX_VALUE;
+        for (int i = 1; i < sorted.size(); i++) {
+            int gap = sorted.get(i) - sorted.get(i - 1);
+            if (gap > 0 && gap < minGap) minGap = gap;
+        }
+        return minGap == Integer.MAX_VALUE ? 0 : minGap;
     }
 }

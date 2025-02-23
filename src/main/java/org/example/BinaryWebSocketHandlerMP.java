@@ -99,7 +99,7 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
         }
 
         int numImages = compressedBitmaps.size();
-        int totalDataSize = 1 + numImages * 3; // Pierwszy element to liczba obrazów, reszta: width, height + dane
+        int totalDataSize = 1 + numImages * 4; // Pierwszy element to liczba obrazów, reszta: width, height + dane
 
         for (ImageProcessor.CompressedBitmap cb : compressedBitmaps) {
             totalDataSize += cb.data.length;
@@ -131,6 +131,7 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
             }
 
             // Pakowanie danych obrazu do bufora
+            compressedData[index++] = cb.smallPx;
             compressedData[index++] = cb.width;
             compressedData[index++] = cb.height;
             compressedData[index++] = cb.n;

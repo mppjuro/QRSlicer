@@ -5,22 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0f685ed5-6bae-41c7-9640-5ce633e0c259" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/BinaryWebSocketHandlerMP.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/WebSocketConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/debug-binary.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/debug-original.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/debug_output.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/BinaryzacjaApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/BinaryzacjaApplication.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/BinaryzacjaController.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/BinaryWebSocketHandlerMP.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/BinaryWebSocketHandlerMP.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/ImageProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/ImageProcessor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/ImageRequest.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -60,13 +48,13 @@
     "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/PJURO/Desktop/QRSlicer-tester",
+    "last_opened_file_path": "C:/Users/PJURO/Desktop/QRSlicer",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "Project",
+    "project.structure.last.edited": "Modules",
     "project.structure.proportion": "0.15",
     "project.structure.side.proportion": "0.2",
     "vue.rearranger.settings.migration": "true"
@@ -84,8 +72,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-125ca727e0f0-intellij.indexing.shared.core-IU-243.24978.46" />
-        <option value="bundled-js-predefined-d6986cc7102b-76f8388c3a79-JavaScript-IU-243.24978.46" />
+        <option value="bundled-jdk-9823dce3aa75-e9a9b764149b-intellij.indexing.shared.core-IU-251.21418.62" />
+        <option value="bundled-js-predefined-d6986cc7102b-6a163169533b-JavaScript-IU-251.21418.62" />
       </set>
     </attachedChunks>
   </component>
@@ -100,6 +88,7 @@
       <workItem from="1739989955620" duration="14508000" />
       <workItem from="1740049874404" duration="3525000" />
       <workItem from="1740053441839" duration="5086000" />
+      <workItem from="1740307616335" duration="3358000" />
     </task>
     <servers />
   </component>
