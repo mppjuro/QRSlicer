@@ -31,6 +31,12 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
     }
 
     @Override
+    public void afterConnectionEstablished(WebSocketSession session) {
+        session.setBinaryMessageSizeLimit(20 * 1024 * 1024);
+        session.setTextMessageSizeLimit(20 * 1024 * 1024);
+    }
+
+    @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws IOException {
         SessionState state = sessionStates.computeIfAbsent(session.getId(), k -> new SessionState());
         ByteBuffer buffer = message.getPayload();
@@ -82,7 +88,6 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
             int red = (pixel >> 16) & 0xff;
             int green = (pixel >> 8) & 0xff;
             int blue = pixel & 0xff;
-            // Zamiana: czerwony <-> niebieski
             pixels[i] = (blue << 16) | (green << 8) | red;
         }
 
@@ -99,7 +104,7 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
         }
 
         int numImages = compressedBitmaps.size();
-        int totalDataSize = 1 + numImages * 4; // Pierwszy element to liczba obrazów, reszta: width, height + dane
+        int totalDataSize = 1 + numImages * 4;
 
         for (ImageProcessor.CompressedBitmap cb : compressedBitmaps) {
             totalDataSize += cb.data.length;
@@ -121,10 +126,10 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
                     outputImage.setRGB(x, y, value == 1 ? 0x000000 : 0xFFFFFF);
                 }
             }
-            // Zapis obrazu do odpowiedniego pliku (np. I.png, II.png, itd.)
+
             File outputFile = outputFiles.get(i);
             boolean saved = ImageIO.write(outputImage, "png", outputFile);
-            if(saved) {
+            if (saved) {
                 System.out.println("Zapisano wykres do: " + outputFile.getName());
             } else {
                 System.err.println("Nie udało się zapisać wykresu: " + outputFile.getName());
