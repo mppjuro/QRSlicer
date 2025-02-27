@@ -26,7 +26,6 @@ public class ImageProcessor {
      * Główna metoda przetwarzająca:
      *  - Wczytuje bajty PNG -> BufferedImage
      *  - Wykryqwa ilość px na kratkę małą
-     *  - Binaryzacja -> boolean[][] (+ warunek r<150... => false)
      *  - Usuwanie samotnych pikseli
      *  - Odcinanie lewego marginesu
      *  - Szukanie 7 bloków białych w poziomie, żeby pociąć na 6 linii
