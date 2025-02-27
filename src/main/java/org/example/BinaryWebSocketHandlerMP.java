@@ -42,7 +42,7 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
         ByteBuffer buffer = message.getPayload();
 
         if (!state.dimensionsReceived) {
-            // Pierwszy fragment zawiera wymiary
+            // Pierwszy fragment - wymiary
             state.width = buffer.getInt();
             state.height = buffer.getInt();
             state.dimensionsReceived = true;
@@ -68,21 +68,18 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
             } catch (IOException e) {
                 System.err.println("Błąd przetwarzania obrazu: " + e.getMessage());
             }
-            System.out.println("Przetworzono");
+            System.out.println("Przetworzono.");
         }
     }
 
     private void processCompleteImage(WebSocketSession session, SessionState state) throws IOException {
-        // Konwersja bufora na obraz
         byte[] imageBytes = state.imageBuffer.toByteArray();
         BufferedImage receivedImage = new BufferedImage(state.width, state.height, BufferedImage.TYPE_INT_RGB);
-
-        // Wypełnij obraz danymi RGB
         ByteBuffer byteBuffer = ByteBuffer.wrap(imageBytes);
         int[] pixels = new int[imageBytes.length / 4];
         byteBuffer.asIntBuffer().get(pixels);
 
-        // Zamiana kanałów czerwonego i niebieskiego
+        // Zamiana kanałów czerwonego i niebieskiego z kodowania mojego RGB na normalne BGR
         for (int i = 0; i < pixels.length; i++) {
             int pixel = pixels[i];
             int red = (pixel >> 16) & 0xff;
@@ -96,7 +93,7 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
         // Zapis oryginalnego obrazu jako received.png
         ImageIO.write(receivedImage, "png", new File("received.png"));
 
-        // Przetwarzanie obrazu -> uzyskanie listy skompresowanych bitmap
+        // Przetwarzanie obrazu - uzyskanie listy 12 skompresowanych bitmap
         List<ImageProcessor.CompressedBitmap> compressedBitmaps = imageProcessor.processImage(receivedImage);
         if (compressedBitmaps.isEmpty()) {
             System.err.println("Błąd: Przetwarzanie obrazu nie zwróciło wyników.");
@@ -104,6 +101,7 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
         }
 
         int numImages = compressedBitmaps.size();
+        // ilość px na kratkę + szer + wys + n(data.length) = 4
         int totalDataSize = 1 + numImages * 4;
 
         for (ImageProcessor.CompressedBitmap cb : compressedBitmaps) {
@@ -135,7 +133,6 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
                 System.err.println("Nie udało się zapisać wykresu: " + outputFile.getName());
             }
 
-            // Pakowanie danych obrazu do bufora
             compressedData[index++] = cb.smallPx;
             compressedData[index++] = cb.width;
             compressedData[index++] = cb.height;
@@ -145,7 +142,7 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
         }
 
         // Wysłanie skompresowanych danych do klienta
-        ByteBuffer responseBuffer = ByteBuffer.allocate(compressedData.length * 4);
+        ByteBuffer responseBuffer = ByteBuffer.allocate(compressedData.length * 4); // int to 4 bajty
         IntBuffer intBuffer = responseBuffer.asIntBuffer();
         intBuffer.put(compressedData);
         session.sendMessage(new BinaryMessage(responseBuffer.array()));

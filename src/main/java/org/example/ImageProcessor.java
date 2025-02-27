@@ -25,14 +25,14 @@ public class ImageProcessor {
     /**
      * Główna metoda przetwarzająca:
      *  - Wczytuje bajty PNG -> BufferedImage
+     *  - Wykryqwa ilość px na kratkę małą
      *  - Binaryzacja -> boolean[][] (+ warunek r<150... => false)
      *  - Usuwanie samotnych pikseli
      *  - Odcinanie lewego marginesu
-     *  - Szukanie 7 bloków białych (>=5% wysokości), pierwszy tniemy w 70%, ostatni w 30%, środkowe w 50%
+     *  - Szukanie 7 bloków białych w poziomie, żeby pociąć na 6 linii
      *  - Pionowa linia -> środek (width/2)
-     *  - Cięcie na 8×2 segmentów (lub fallback)
-     *  - Zapis debug_output.png z czerwoną siatką
-     *  - Zwraca listę obiektów CompressedBitmap (zamiast JSON String!)
+     *  - Cięcie na 8×2 segmentów (6x2 to EKG) i górny oraz dolny margines
+     *  - Zwraca listę obiektów CompressedBitmap
      */
     public List<CompressedBitmap> processImage(BufferedImage input) throws IOException {
         if (input == null) {
@@ -42,22 +42,21 @@ public class ImageProcessor {
         int origWidth = input.getWidth();
         int origHeight = input.getHeight();
 
-        // W metodzie processImage, przed binaryzacją (po sprawdzeniu input != null):
-
-// --- Wykrywanie czerwonych linii (85% pikseli) ---
+        // 1. Wykrywanie ilości px na kratkę małą (1/5 px na kratkę dużą)
         List<Integer> horizontalRedLines = new ArrayList<>();
         List<Integer> verticalRedLines = new ArrayList<>();
         int redThreshold = 200;   // Początkowy próg dla kanału R
         int greenBlueThreshold = 100; // Maksymalna wartość dla kanałów G i B
-        int requiredPercentage = 80; // Wymagany % czerwonych pikseli
+        int requiredPercentage = 70; // Wymagany % czerwonych pikseli
         int attempts = 0;
-        boolean linesDetected = false;
+        boolean vlinesDetected = false;
+        boolean hlinesDetected = false;
 
         do {
             horizontalRedLines.clear();
             verticalRedLines.clear();
 
-            // Wykrywanie poziomych linii (sprawdzaj każdy wiersz)
+            // Wykrywanie poziomych linii
             for (int y = 0; y < origHeight; y++) {
                 int redPixels = 0;
                 for (int x = 0; x < origWidth; x++) {
@@ -72,7 +71,7 @@ public class ImageProcessor {
                 }
             }
 
-            // Wykrywanie pionowych linii (sprawdzaj każdą kolumnę)
+            // Wykrywanie pionowych linii
             for (int x = 0; x < origWidth; x++) {
                 int redPixels = 0;
                 for (int y = 0; y < origHeight; y++) {
@@ -87,19 +86,27 @@ public class ImageProcessor {
                 }
             }
 
-            // Dostosuj próg czerwieni, aby liczba linii mieściła się w 30-40
-            if (horizontalRedLines.size() < 30) {
-                redThreshold = Math.max(0, redThreshold - 5); // Zmniejsz próg R
-            } else if (horizontalRedLines.size() > 40) {
-                redThreshold = Math.min(255, redThreshold + 5); // Zwiększ próg R
+            // Dostosowanie progu czerwieni, aby liczba linii mieściła się w zakresie
+            if (verticalRedLines.size() < 80) {
+                redThreshold = Math.max(0, redThreshold - 5);
+            } else if (verticalRedLines.size() > 130) {
+                redThreshold = Math.min(255, redThreshold + 5);
             } else {
-                linesDetected = true;
+                vlinesDetected = true;
+            }
+
+            if (horizontalRedLines.size() < 30) {
+                redThreshold = Math.max(0, redThreshold - 5);
+            } else if (horizontalRedLines.size() > 60) {
+                redThreshold = Math.min(255, redThreshold + 5);
+            } else {
+                hlinesDetected = true;
             }
 
             attempts++;
-        } while (!linesDetected && attempts < 20);
+        } while ((!vlinesDetected || !hlinesDetected) && attempts < 20 && !vlinesDetected);
 
-// Zaznacz linie na obrazie i zapisz
+        // Zaznacz linie na obrazie i zapisz
         BufferedImage linesImage = copyBufferedImage(input);
         Graphics2D g = linesImage.createGraphics();
         g.setColor(Color.GREEN);
@@ -114,17 +121,13 @@ public class ImageProcessor {
         g.dispose();
         ImageIO.write(linesImage, "png", new File("received-lines.png"));
 
-        // W metodzie processImage, po wykryciu linii i przed binaryzacją:
         int minHorizontalGap = calculateMinGap(horizontalRedLines);
         int minVerticalGap = calculateMinGap(verticalRedLines);
-
-        int bigPx = Math.max(minHorizontalGap, minVerticalGap);
-        if (bigPx <= 0) bigPx = 1; // Zabezpieczenie przed zerem
-        int smallPx = 1000000 * bigPx / 5;
-
+        if (minHorizontalGap <= 0) minHorizontalGap = 1000;
+        if (minVerticalGap <= 0) minVerticalGap = 1000;
+        int bigPx = Math.min(minHorizontalGap, minVerticalGap);
+        int smallPx = 1000000 * bigPx / 5; // razy 1M, żeby wysłać jako int
         System.out.println("Px na kratkę: " + (double)smallPx/1000000.0);
-
-// --- Koniec modyfikacji ---
 
         // 2. Binaryzacja + usuwanie samotnych pikseli
         boolean[][] matrix = new boolean[origHeight][origWidth];
@@ -170,7 +173,7 @@ public class ImageProcessor {
         // 5. Pionowa linia w samym środku
         int vLine = width / 2;
 
-        // 6. Tniemy na 8×2 (lub fallback)
+        // 6. Tniemy na 8×2
         List<CompressedBitmap> resultList;
         if (!fallback) {
             resultList = cutIntoSegments(matrix, hLines, vLine, smallPx);
@@ -186,7 +189,7 @@ public class ImageProcessor {
 
         return resultList;
     }
-    // -------------------------------------------------------------------------
+
     private boolean[][] removeLonelyPixels(boolean[][] matrix) {
         int h = matrix.length, w = matrix[0].length;
         boolean[][] result = new boolean[h][w];
@@ -245,8 +248,7 @@ public class ImageProcessor {
         return result;
     }
 
-    // -------------------------------------------------------------------------
-    // Znajdowanie 7 linii => 8 segmentów
+    // Znajdowanie 7 linii w poziomie - cięcie na 8 fragmentów (w tym 2 to marginesy)
     private List<Integer> find7HorizontalLines(boolean[][] matrix) {
         int h = matrix.length;
         int w = matrix[0].length;
@@ -255,7 +257,7 @@ public class ImageProcessor {
         List<WhiteBlock> blocks = null;
 
         // Zwiększamy minimumPer co 0.01, aż dokładnie 7 bloków zostanie wykrytych
-        while (minimumPer <= 1.0) { // górna granica – w razie czego
+        while (minimumPer <= 1.0) {
             double minBlockHeight = minimumPer * h;
             boolean[] isWhite = new boolean[h];
             for (int y = 0; y < h; y++) {
@@ -326,28 +328,20 @@ public class ImageProcessor {
         WhiteBlock(int s, int e) { start = s; end = e; }
     }
 
-
-    // -------------------------------------------------------------------------
-    // Tniemy 8×2 lub fallback
-    private List<CompressedBitmap> cutIntoSegments(boolean[][] matrix, List<Integer> hLines, int vLine, int smallPx) {        int h = matrix.length, w = matrix[0].length;
-
-        // Upewnij się, że hLines są posortowane
+    // Cięcie 8x2
+    private List<CompressedBitmap> cutIntoSegments(boolean[][] matrix, List<Integer> hLines, int vLine, int smallPx) {
+        int h = matrix.length, w = matrix[0].length;
         hLines.sort(Integer::compareTo);
-
-        // Budujemy granice poziome: [0, hLine1, hLine2, ..., hLine7, h]
         List<Integer> finalY = new ArrayList<>();
         finalY.add(0);
         finalY.addAll(hLines);
         finalY.add(h);
 
         int halfW = w / 2;
-        // Zbieramy segmenty osobno dla lewej i prawej kolumny
         List<boolean[][]> leftSubMatrices = new ArrayList<>();
         List<boolean[][]> rightSubMatrices = new ArrayList<>();
 
-        // Przetwarzamy tylko segmenty odpowiadające głównym wykresom EKG:
-        // pomijamy pierwszy segment (od 0 do hLine1) oraz ostatni (od hLine7 do h)
-        for (int i = 1; i < finalY.size() - 2; i++) {  // przy finalY.size()==9 => i = 1..6 (6 segmentów pionowo)
+        for (int i = 1; i < finalY.size() - 2; i++) {
             int y1 = finalY.get(i);
             int y2 = finalY.get(i + 1);
             int segH = y2 - y1;
@@ -363,7 +357,7 @@ public class ImageProcessor {
             rightSubMatrices.add(rightSub);
         }
 
-        // Łączymy segmenty – najpierw lewa kolumna (I, II, III, aVR, aVL, aVF), potem prawa (V1, V2, V3, V4, V5, V6)
+        // Najpierw lewa kolumna (I, II, III, aVR, aVL, aVF), potem prawa (V1, V2, V3, V4, V5, V6)
         List<boolean[][]> subMatrices = new ArrayList<>();
         subMatrices.addAll(leftSubMatrices);
         subMatrices.addAll(rightSubMatrices);
@@ -372,7 +366,7 @@ public class ImageProcessor {
         int minH = subMatrices.stream().mapToInt(m -> m.length).min().orElse(0);
         int minW = subMatrices.stream().mapToInt(m -> m[0].length).min().orElse(0);
 
-        // Przycinamy każdy segment do (minH x minW), a następnie usuwamy 5% z lewej i prawej (ze względu na artefakty)
+        // Przycinamy każdy segment do (minH x minW), a następnie usuwamy 5% z lewej i prawej
         List<CompressedBitmap> list = new ArrayList<>();
         for (boolean[][] sub : subMatrices) {
             boolean[][] trimmed = trimToSize(sub, minH, minW);
@@ -391,13 +385,11 @@ public class ImageProcessor {
 
     private List<CompressedBitmap> cutEqually(boolean[][] matrix, int smallPx) {
         int h = matrix.length, w = matrix[0].length;
-        int rowH = h / 8;  // oryginalny podział na 8 rzędów
+        int rowH = h / 8;
         int colW = w / 2;
-        // Zbieramy segmenty oddzielnie dla lewej i prawej kolumny
         List<boolean[][]> leftSubMatrices = new ArrayList<>();
         List<boolean[][]> rightSubMatrices = new ArrayList<>();
 
-        // Pomijamy pierwszy (row = 0) i ostatni (row = 7) rząd – pozostają 6 rzędów (główne wykresy)
         for (int row = 1; row < 7; row++) {
             int y1 = row * rowH;
             int y2 = (row + 1) * rowH;
@@ -414,12 +406,10 @@ public class ImageProcessor {
             rightSubMatrices.add(rightSub);
         }
 
-        // Łączymy – najpierw segmenty z lewej kolumny, potem te z prawej
         List<boolean[][]> subMatrices = new ArrayList<>();
         subMatrices.addAll(leftSubMatrices);
         subMatrices.addAll(rightSubMatrices);
 
-        // Wyznaczamy minimalne wymiary spośród 12 głównych wykresów EKG
         int minH = subMatrices.stream().mapToInt(m -> m.length).min().orElse(0);
         int minW = subMatrices.stream().mapToInt(m -> m[0].length).min().orElse(0);
 
@@ -439,8 +429,6 @@ public class ImageProcessor {
         return list;
     }
 
-    // -------------------------------------------------------------------------
-    // Kompresja boole[][] -> int[]
     private int[] compressBooleanMatrix(boolean[][] subMatrix) {
         int hh=subMatrix.length;
         int ww=subMatrix[0].length;
@@ -469,8 +457,6 @@ public class ImageProcessor {
         return result;
     }
 
-    // -------------------------------------------------------------------------
-    // Rysowanie debug_output.png
     private void drawDebugLines(BufferedImage img,
                                 List<Integer> hLines,
                                 int vLine,

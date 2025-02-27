@@ -5,11 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0f685ed5-6bae-41c7-9640-5ce633e0c259" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/kotlin-statistics.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/received-lines.png" beforeDir="false" afterPath="$PROJECT_DIR$/received-lines.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/BinaryWebSocketHandlerMP.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/BinaryWebSocketHandlerMP.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/BinaryzacjaApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/BinaryzacjaApplication.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/ImageProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/ImageProcessor.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/WebSocketConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/WebSocketConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -96,6 +97,8 @@
       <workItem from="1740307616335" duration="3358000" />
       <workItem from="1740594501064" duration="1181000" />
       <workItem from="1740595761104" duration="1565000" />
+      <workItem from="1740598074289" duration="1356000" />
+      <workItem from="1740678259841" duration="1969000" />
     </task>
     <servers />
   </component>
