@@ -5,11 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0f685ed5-6bae-41c7-9640-5ce633e0c259" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/kotlin-statistics.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/kotlin-statistics.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/received-lines.png" beforeDir="false" afterPath="$PROJECT_DIR$/received-lines.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/BinaryWebSocketHandlerMP.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/BinaryWebSocketHandlerMP.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/BinaryzacjaApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/BinaryzacjaApplication.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/ImageProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/ImageProcessor.java" afterDir="false" />
@@ -54,7 +58,7 @@
     "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/PJURO/Desktop/QRSlicer-tester",
+    "last_opened_file_path": "C:/Users/PJURO/Desktop/STUDIA/QRSlicer-tester",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -78,8 +82,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-125ca727e0f0-intellij.indexing.shared.core-IU-243.24978.46" />
-        <option value="bundled-js-predefined-d6986cc7102b-76f8388c3a79-JavaScript-IU-243.24978.46" />
+        <option value="bundled-jdk-9823dce3aa75-a94e463ab2e7-intellij.indexing.shared.core-IU-243.25659.39" />
+        <option value="bundled-js-predefined-d6986cc7102b-1632447f56bf-JavaScript-IU-243.25659.39" />
       </set>
     </attachedChunks>
   </component>
@@ -96,6 +100,7 @@
       <workItem from="1740053441839" duration="5086000" />
       <workItem from="1740077616813" duration="2796000" />
       <workItem from="1740084842716" duration="2979000" />
+      <workItem from="1741108048120" duration="5517000" />
     </task>
     <servers />
   </component>

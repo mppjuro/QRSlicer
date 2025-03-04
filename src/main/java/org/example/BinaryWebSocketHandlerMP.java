@@ -74,6 +74,9 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
 
     private void processCompleteImage(WebSocketSession session, SessionState state) throws IOException {
         byte[] imageBytes = state.imageBuffer.toByteArray();
+        if (imageBytes.length != state.width * state.height * 4) {
+            throw new IOException("Nieprawidłowy rozmiar danych obrazu. Oczekiwano " + (state.width * state.height * 4) + " bajtów, otrzymano " + imageBytes.length);
+        }
         BufferedImage receivedImage = new BufferedImage(state.width, state.height, BufferedImage.TYPE_INT_RGB);
         ByteBuffer byteBuffer = ByteBuffer.wrap(imageBytes);
         int[] pixels = new int[imageBytes.length / 4];
