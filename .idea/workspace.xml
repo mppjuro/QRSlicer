@@ -13,7 +13,9 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/received-cut.png" beforeDir="false" afterPath="$PROJECT_DIR$/received-cut.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/received-lines.png" beforeDir="false" afterPath="$PROJECT_DIR$/received-lines.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/received.png" beforeDir="false" afterPath="$PROJECT_DIR$/received.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/BinaryWebSocketHandlerMP.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/BinaryWebSocketHandlerMP.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/BinaryzacjaApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/BinaryzacjaApplication.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/ImageProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/ImageProcessor.java" afterDir="false" />
@@ -58,7 +60,7 @@
     "git-widget-placeholder": "main",
     "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/PJURO/Desktop/STUDIA/QRSlicer-tester",
+    "last_opened_file_path": "C:/Users/PJURO/Desktop/zespolowka/demo",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -100,7 +102,8 @@
       <workItem from="1740053441839" duration="5086000" />
       <workItem from="1740077616813" duration="2796000" />
       <workItem from="1740084842716" duration="2979000" />
-      <workItem from="1741108048120" duration="5517000" />
+      <workItem from="1741108048120" duration="5757000" />
+      <workItem from="1741172059746" duration="803000" />
     </task>
     <servers />
   </component>

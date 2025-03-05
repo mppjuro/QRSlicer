@@ -40,19 +40,9 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws IOException {
         SessionState state = sessionStates.computeIfAbsent(session.getId(), k -> new SessionState());
         ByteBuffer buffer = message.getPayload();
-
-        if (!state.dimensionsReceived) {
-            // Pierwszy fragment - wymiary
-            state.width = buffer.getInt();
-            state.height = buffer.getInt();
-            state.dimensionsReceived = true;
-            System.out.println("Otrzymano wymiary: " + state.width + "x" + state.height);
-        } else {
-            // Kolejne fragmenty z danymi RGB
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes);
-            state.imageBuffer.write(bytes);
-        }
+        byte[] bytes = new byte[buffer.remaining()];
+        buffer.get(bytes);
+        state.imageBuffer.write(bytes);
     }
 
     @Override
@@ -74,39 +64,26 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
 
     private void processCompleteImage(WebSocketSession session, SessionState state) throws IOException {
         byte[] imageBytes = state.imageBuffer.toByteArray();
-        if (imageBytes.length != state.width * state.height * 4) {
-            throw new IOException("Nieprawidłowy rozmiar danych obrazu. Oczekiwano " + (state.width * state.height * 4) + " bajtów, otrzymano " + imageBytes.length);
+        BufferedImage receivedImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
+        if (receivedImage == null) {
+            throw new IOException("Nie udało się odczytać obrazu PNG.");
         }
-        BufferedImage receivedImage = new BufferedImage(state.width, state.height, BufferedImage.TYPE_INT_RGB);
-        ByteBuffer byteBuffer = ByteBuffer.wrap(imageBytes);
-        int[] pixels = new int[imageBytes.length / 4];
-        byteBuffer.asIntBuffer().get(pixels);
+        int width = receivedImage.getWidth();
+        int height = receivedImage.getHeight();
 
-        // Zamiana kanałów czerwonego i niebieskiego z kodowania mojego RGB na normalne BGR
-        for (int i = 0; i < pixels.length; i++) {
-            int pixel = pixels[i];
-            int red = (pixel >> 16) & 0xff;
-            int green = (pixel >> 8) & 0xff;
-            int blue = pixel & 0xff;
-            pixels[i] = (blue << 16) | (green << 8) | red;
-        }
-
-        receivedImage.setRGB(0, 0, state.width, state.height, pixels, 0, state.width);
-
-        // Zapis oryginalnego obrazu jako received.png
+        // Zapis oryginalnego obrazu jako received.png (dla debugowania)
         ImageIO.write(receivedImage, "png", new File("received.png"));
 
-        // Przetwarzanie obrazu - uzyskanie listy 12 skompresowanych bitmap
-        List<ImageProcessor.CompressedBitmap> compressedBitmaps = imageProcessor.processImage(receivedImage);
+        // Przetwarzamy obraz – otrzymujemy listę 12 skompresowanych bitmap (bez zmian)
+        java.util.List<ImageProcessor.CompressedBitmap> compressedBitmaps = imageProcessor.processImage(receivedImage);
         if (compressedBitmaps.isEmpty()) {
             System.err.println("Błąd: Przetwarzanie obrazu nie zwróciło wyników.");
             return;
         }
 
         int numImages = compressedBitmaps.size();
-        // ilość px na kratkę + szer + wys + n(data.length) = 4
+        // Całkowity rozmiar danych: 1 int (liczba obrazów) + dla każdego obrazu 4 inty + długość tablicy danych
         int totalDataSize = 1 + numImages * 4;
-
         for (ImageProcessor.CompressedBitmap cb : compressedBitmaps) {
             totalDataSize += cb.data.length;
         }
@@ -144,8 +121,7 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
             index += cb.data.length;
         }
 
-        // Wysłanie skompresowanych danych do klienta
-        ByteBuffer responseBuffer = ByteBuffer.allocate(compressedData.length * 4); // int to 4 bajty
+        ByteBuffer responseBuffer = ByteBuffer.allocate(compressedData.length * 4); // int = 4 bajty
         IntBuffer intBuffer = responseBuffer.asIntBuffer();
         intBuffer.put(compressedData);
         session.sendMessage(new BinaryMessage(responseBuffer.array()));
@@ -157,9 +133,6 @@ public class BinaryWebSocketHandlerMP extends BinaryWebSocketHandler {
     }
 
     private static class SessionState {
-        int width;
-        int height;
         ByteArrayOutputStream imageBuffer = new ByteArrayOutputStream();
-        boolean dimensionsReceived = false;
     }
 }
